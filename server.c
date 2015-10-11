@@ -15,6 +15,7 @@ int main()
   char buf[MAX_LINE];
   int len;
   int s, new_s;
+	int opt = 1;
   
   /* build address data structure */
   bzero((char *)&sin, sizeof(sin));
