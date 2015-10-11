@@ -26,7 +26,7 @@ int file_exists(char * filename)
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
 	struct sockaddr_in sin;
 	char buf[MAX_LINE];
@@ -35,12 +35,22 @@ int main()
 	int opt = 1;
 	int file_size;
 	char file_size_s[100];
+	int server_port;
+
+	if (argc==2)
+	{
+		server_port = atoi(argv[1]);
+	} else {
+		fprintf(stderr,"usage: simplex-talk host\n");
+		exit(1);
+	}
+
 
 	/* build address data structure */
 	bzero((char *)&sin, sizeof(sin));
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = INADDR_ANY;
-	sin.sin_port = htons(SERVER_PORT);
+	sin.sin_port = htons(server_port);
 
 	/* setup passive open */
 	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
@@ -60,7 +70,6 @@ int main()
 		perror("simplex-talk: listen"); exit(1);
 	} 
 
-	printf("Welcome to the first TCP Server!\n");
 	/* wait for connection, then receive and print text */
 	while(1) {
 		if ((new_s = accept(s, (struct sockaddr *)&sin, &len)) < 0) {
@@ -74,9 +83,9 @@ int main()
 			exit(1);
 		}
 		if (len==0) break;
-		printf("TCP Server Received:%s", buf);
 
 		file_size = file_exists(buf);
+		printf("%i\n",file_size);
 		sprintf(file_size_s,"%i",file_size);
 		send(new_s,file_size_s,sizeof(file_size_s)/sizeof(char),0);
 
@@ -84,11 +93,9 @@ int main()
 		{
 
 		} else {
-			perror("File does not exist");
 			exit(1);
 		}
 
-		printf("Client finishes, close the connection!\n");
 		close(new_s);
 	}
 }
