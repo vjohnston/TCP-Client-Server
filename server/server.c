@@ -2,10 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <openssl/md5.h>
 #define SERVER_PORT 41017
 #define MAX_PENDING 5
 #define MAX_LINE 256
@@ -36,6 +40,9 @@ int main(int argc, char* argv[])
 	int file_size;
 	char file_size_s[100];
 	int server_port;
+	char* file_buffer;
+	int file_description;
+	unsigned char result[MD5_DIGEST_LENGTH];
 
 	if (argc==2)
 	{
@@ -91,6 +98,14 @@ int main(int argc, char* argv[])
 
 		if(file_size > 0)
 		{
+			//get MD5 from file
+			file_description = open(buf,O_RDONLY);
+			file_buffer = mmap(0,file_size, PROT_READ, MAP_SHARED, file_description, 0);
+			MD5((unsigned char*) file_buffer, file_size, result);
+			munmap(file_buffer, file_size);
+
+			//send MD5
+			send(new_s,result,sizeof(result)/sizeof(unsigned char),0);
 
 		} else {
 			exit(1);
