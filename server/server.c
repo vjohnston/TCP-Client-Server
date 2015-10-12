@@ -32,8 +32,8 @@ int file_exists(char * filename)
 int main(int argc, char* argv[])
 {
 	struct sockaddr_in sin;
-	char buf[MAX_LINE];
 	int len;
+	char buf[MAX_LINE];
 	int s, new_s;
 	int opt = 1;
 	int file_size;
@@ -114,17 +114,25 @@ int main(int argc, char* argv[])
 				str[(i*2)+1]=str2[1];
 			}
 			str[2*MD5_DIGEST_LENGTH]='\0';
-			printf("\n");
-			printf("%s",str);
+			//printf("md5:%s",str);
 			
 			char md5[strlen(str)+1];
 			memcpy(md5,str,strlen(str));
 			md5[strlen(str)] = '\0';
-			printf("\nstring:%s %i",md5,sizeof(md5));
-
+			
 			//send MD5
 			if(send(new_s, md5,sizeof(md5),0)==-1){
-				perror("Client send error!"); exit(1);
+				perror("Server send error!"); exit(1);
+			}
+
+			//now open and send file
+			char text[file_size+1];
+			FILE *fp = fopen(buf, "r");
+			char line[256];
+			memset(line,'\0',sizeof(line));
+			while (fgets(line,sizeof(line),fp)){
+				send(new_s, line,sizeof(line),0);
+				memset(line,'\0',sizeof(line));
 			}
 
 		} else {

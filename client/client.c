@@ -12,8 +12,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
-#define MAX_MD5LENGTH 256
-#define MAX_FILELENGTH 1000
+#define MAX_MD5LENGTH 100
+#define MAX_FILELENGTH 2000
 #define MAX_FILENAME 100
 int
 main(int argc, char * argv[])
@@ -24,12 +24,12 @@ main(int argc, char * argv[])
 	struct sockaddr_in sin;
 	struct timeval tv;
 	char *host;
-	char md5server[100];
-	char md5client[MD5_DIGEST_LENGTH];
 	char buf[MAX_FILELENGTH];
+	char md5server[MAX_MD5LENGTH];
+	char md5client[MD5_DIGEST_LENGTH];
 	char *filename;
 	int s, len, server_port;
-	double start_time, end_time, nBytes, throughput;
+	float start_time, end_time, nBytes, throughput;
   
 	// Inputs: client host port filename
   	if (argc==4) {
@@ -79,43 +79,63 @@ main(int argc, char * argv[])
 	if (atoi(file_size)<0){
 		perror("File does not exist"); exit(1);
 	}
-	printf("%s\n",file_size);
+	//printf("%s\n",file_size);
 
 	/* If the file size is valid keep receiving MD5 hash of file */
 	memset(md5server,'\0',sizeof(md5server));
-	if (recv(s,md5server,sizeof(md5server),0)==-1){
-		perror("Client receiver error!"); exit(1);
+	while(strlen(md5server)==0){
+		recv(s,md5server,sizeof(md5server),0);
 	}
-	printf("len:%i\n",strlen(md5server));
 	md5server[strlen(md5server)] = '\0';
-	/*int i;
-	for (i=0; i<sizeof(md5server); i++){
-		printf("%c",md5server[i]);
-	}
-	printf("\n"); */
-	printf("%s\n",md5server);
+	printf("md5:%s len:%i\n",md5server,strlen(md5server));
 
 	/* Calculate starting time */
 	gettimeofday(&tv,NULL);
 	start_time = tv.tv_usec;
-	//printf(
 	
-	/* receive the file from the server */
-	if ((nBytes=recv(s,buf,sizeof(buf),0))==-1) {
-		perror("Client receiver error!"); exit(1);
+	/* receive the file from the server. Get line by line and add to buffer */
+	int n;
+	char line[256];
+	memset(buf,'\0',sizeof(buf));
+	memset(line,'\0',sizeof(line));
+	while ((n=recv(s,line,sizeof(line),0))>0) {
+		strcat(buf,line);
+		nBytes += n;
+		memset(line,'\0',sizeof(line));
 	}
+	printf("buf:%s",buf);
 
 	/* Calculate end time and throughput of file transfer */
 	gettimeofday(&tv,NULL);
 	end_time = tv.tv_usec; //in microsecond
-	double RTT = (end_time-start_time) * pow(10,-6); //RTT in seconds
+	float RTT = (end_time-start_time) * pow(10,-6); //RTT in seconds
 	throughput = (nBytes*pow(10,-6))/RTT;
-	printf("Throughput: %d\n",throughput);
+	printf("Throughput: %f\n",throughput);
 
 	/* close server connection */
   	close(s);
 
 	/* covert buf to MD5 hash */
+	MD5((unsigned char*) buf, atoi(file_size), md5client);
+	munmap(buf, atoi(file_size));
+
+	int i,j;
+	char str[2*MD5_DIGEST_LENGTH+2];
+	memset(str,'\0',sizeof(str));
+	char str2[2];
+	for(i=0; i<MD5_DIGEST_LENGTH; i++) {
+		sprintf(str2,"%02x",md5client[i]);
+		str[i*2]=str2[0];
+		str[(i*2)+1]=str2[1];
+	}
+        str[2*MD5_DIGEST_LENGTH]='\0';
+
+	char md5str[strlen(str)+1];
+	memcpy(md5str,str,strlen(str));
+	md5str[strlen(str)] = '\0';
+
+	printf("%s\n",md5server);
+	printf("%s\n",md5str);
 
 	/* compare md5 from server (MD5server) to md5 form client (MD5client)*/
 	
