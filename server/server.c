@@ -29,7 +29,6 @@ int file_exists(char * filename)
 	return -1;
 }
 
-
 int main(int argc, char* argv[])
 {
 	struct sockaddr_in sin;
@@ -43,6 +42,7 @@ int main(int argc, char* argv[])
 	char* file_buffer;
 	int file_description;
 	unsigned char result[MD5_DIGEST_LENGTH];
+	char hex[100];
 
 	if (argc==2)
 	{
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 		file_size = file_exists(buf);
 		printf("%i\n",file_size);
 		sprintf(file_size_s,"%i",file_size);
-		send(new_s,file_size_s,sizeof(file_size_s)/sizeof(char),0);
+		send(new_s,file_size_s,sizeof(file_size_s),0);
 
 		if(file_size > 0)
 		{
@@ -104,10 +104,30 @@ int main(int argc, char* argv[])
 			MD5((unsigned char*) file_buffer, file_size, result);
 			munmap(file_buffer, file_size);
 
+
+			memset(hex,'\0',sizeof(hex));
+			int i,j;
+			char str[2*MD5_DIGEST_LENGTH+2];
+			memset(str,'\0',sizeof(str));
+			char str2[2];
+			for(i=0; i<MD5_DIGEST_LENGTH; i++) {
+				printf("%02x",result[i]);
+				sprintf(str2,"%02x",result[i]);
+				str[i*2]=str2[0];
+				str[(i*2)+1]=str2[1];
+			}
+			str[2*MD5_DIGEST_LENGTH]='\0';
+			printf("\n");
+			printf("%s",str);
+			printf("\n");
+			printf("%i",strlen(str));
+
+
 			//send MD5
-			send(new_s,result,sizeof(result)/sizeof(unsigned char),0);
+			send(new_s, str,sizeof(str),0);
 
 		} else {
+			perror("File does not exist\n");
 			exit(1);
 		}
 
