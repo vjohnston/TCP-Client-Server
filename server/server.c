@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 		if (len==0) break;
 
 		file_size = file_exists(buf);
-		printf("%i\n",file_size);
+		//printf("%i\n",file_size);
 		sprintf(file_size_s,"%i",file_size);
 		send(new_s,file_size_s,sizeof(file_size_s),0);
 
@@ -104,14 +104,11 @@ int main(int argc, char* argv[])
 			MD5((unsigned char*) file_buffer, file_size, result);
 			munmap(file_buffer, file_size);
 
-
-			memset(hex,'\0',sizeof(hex));
 			int i,j;
 			char str[2*MD5_DIGEST_LENGTH+2];
 			memset(str,'\0',sizeof(str));
 			char str2[2];
 			for(i=0; i<MD5_DIGEST_LENGTH; i++) {
-				printf("%02x",result[i]);
 				sprintf(str2,"%02x",result[i]);
 				str[i*2]=str2[0];
 				str[(i*2)+1]=str2[1];
@@ -119,12 +116,16 @@ int main(int argc, char* argv[])
 			str[2*MD5_DIGEST_LENGTH]='\0';
 			printf("\n");
 			printf("%s",str);
-			printf("\n");
-			printf("%i",strlen(str));
-
+			
+			char md5[strlen(str)+1];
+			memcpy(md5,str,strlen(str));
+			md5[strlen(str)] = '\0';
+			printf("\nstring:%s %i",md5,sizeof(md5));
 
 			//send MD5
-			send(new_s, str,sizeof(str),0);
+			if(send(new_s, md5,sizeof(md5),0)==-1){
+				perror("Client send error!"); exit(1);
+			}
 
 		} else {
 			perror("File does not exist\n");
