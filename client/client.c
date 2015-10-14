@@ -26,7 +26,7 @@ main(int argc, char * argv[])
 	char *host;
 	char buf[MAX_FILELENGTH];
 	char md5server[MAX_MD5LENGTH];
-	char md5client[MD5_DIGEST_LENGTH];
+	unsigned char md5client[MD5_DIGEST_LENGTH];
 	char *filename;
 	int s, len, server_port;
 	float start_time, end_time, nBytes, throughput;
@@ -58,7 +58,6 @@ main(int argc, char * argv[])
   	if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     		perror("simplex-talk: socket"); exit(1);
   	}
-  	printf("Welcome to your first TCP client! To quit, type \'Exit\'\n");
 
   	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
     		perror("simplex-talk: connect");
@@ -79,7 +78,6 @@ main(int argc, char * argv[])
 	if (atoi(file_size)<0){
 		perror("File does not exist"); exit(1);
 	}
-	//printf("%s\n",file_size);
 
 	/* If the file size is valid keep receiving MD5 hash of file */
 	memset(md5server,'\0',sizeof(md5server));
@@ -87,7 +85,6 @@ main(int argc, char * argv[])
 		recv(s,md5server,sizeof(md5server),0);
 	}
 	md5server[strlen(md5server)] = '\0';
-	printf("md5:%s len:%i\n",md5server,strlen(md5server));
 
 	/* Calculate starting time */
 	gettimeofday(&tv,NULL);
@@ -95,7 +92,7 @@ main(int argc, char * argv[])
 	
 	/* receive the file from the server. Get line by line and add to buffer */
 	int n;
-	char line[256];
+	char line[100];
 	memset(buf,'\0',sizeof(buf));
 	memset(line,'\0',sizeof(line));
 	while ((n=recv(s,line,sizeof(line),0))>0) {
@@ -103,15 +100,13 @@ main(int argc, char * argv[])
 		nBytes += n;
 		memset(line,'\0',sizeof(line));
 	}
-	printf("buf:%s",buf);
 
 	/* Calculate end time and throughput of file transfer */
 	gettimeofday(&tv,NULL);
 	end_time = tv.tv_usec; //in microsecond
 	float RTT = (end_time-start_time) * pow(10,-6); //RTT in seconds
 	throughput = (nBytes*pow(10,-6))/RTT;
-	printf("Throughput: %f\n",throughput);
-//
+
 	/* close server connection */
   	close(s);
 
@@ -134,9 +129,13 @@ main(int argc, char * argv[])
 	memcpy(md5str,str,strlen(str));
 	md5str[strlen(str)] = '\0';
 
-	printf("%s\n",md5server);
-	printf("%s\n",md5str);
-
 	/* compare md5 from server (MD5server) to md5 form client (MD5client)*/
-	
+	if (strcmp(md5server,md5str)!=0){
+		printf("File hashes do not match - bad transfer\n");
+		exit(1);
+	} else {
+		printf("Hash matches\n");
+		printf("%.0f bytes transferred in %f seconds. Throughput: %f Megabytes/sec. File MDSum: %s.\n",nBytes,RTT,throughput,md5server);
+	}
+	exit(1);
 }
