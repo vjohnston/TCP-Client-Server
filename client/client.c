@@ -111,7 +111,7 @@ main(int argc, char * argv[])
 	float RTT = (end_time-start_time) * pow(10,-6); //RTT in seconds
 	throughput = (nBytes*pow(10,-6))/RTT;
 	printf("Throughput: %f\n",throughput);
-
+//
 	/* close server connection */
   	close(s);
 

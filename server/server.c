@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 			if(send(new_s, md5,sizeof(md5),0)==-1){
 				perror("Server send error!"); exit(1);
 			}
-
+//
 			//now open and send file
 			char text[file_size+1];
 			FILE *fp = fopen(buf, "r");
