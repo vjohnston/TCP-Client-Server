@@ -13,7 +13,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #define MAX_MD5LENGTH 100
-#define MAX_FILELENGTH 2000
+#define MAX_FILELENGTH 2000000
 #define MAX_FILENAME 100
 int
 main(int argc, char * argv[])
@@ -24,7 +24,7 @@ main(int argc, char * argv[])
 	struct sockaddr_in sin;
 	struct timeval tv;
 	char *host;
-	char buf[MAX_FILELENGTH];
+	char *buf = (char*) malloc(MAX_FILELENGTH);
 	char md5server[MAX_MD5LENGTH];
 	unsigned char md5client[MD5_DIGEST_LENGTH];
 	char *filename;
@@ -92,7 +92,7 @@ main(int argc, char * argv[])
 	
 	/* receive the file from the server. Get line by line and add to buffer */
 	int n;
-	char line[100];
+	char line[2000000];
 	memset(buf,'\0',sizeof(buf));
 	memset(line,'\0',sizeof(line));
 	while ((n=recv(s,line,sizeof(line),0))>0) {

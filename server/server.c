@@ -13,7 +13,7 @@
 #define SERVER_PORT 41017
 #define MAX_PENDING 5
 #define MAX_LINE 256
-#define MAX_FILELENGTH 2000
+#define MAX_FILELENGTH 200000
 
 int file_exists(char * filename)
 {
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 			// open file and get buffer. Send buffer to client
 			// send a line of 100 characters at a time (100 bytes)
 			char text[file_size+1];
-			char line[100];
+			char line[2000000];
 			FILE *fp = fopen(buf, "r");
 			memset(line,'\0',sizeof(line));
 			while (fgets(line,sizeof(line),fp)){
