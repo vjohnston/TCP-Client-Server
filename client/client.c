@@ -90,7 +90,7 @@ main(int argc, char * argv[])
 	gettimeofday(&tv,NULL);
 	start_time = tv.tv_usec;
 	
-	/* receive the file from the server. Get line by line and add to buffer */
+	/* receive the file from the server. Get line by line and save to file */
 	FILE *ofp = fopen(filename,"w");
 	int n;
 	char line[20000];
@@ -112,13 +112,14 @@ main(int argc, char * argv[])
   	close(s);
 
 	fclose(ofp);
-	/* covert buf to MD5 hash */
+	/* open file and get md5 hash*/
 	int size = atoi(file_size);
 	file_description = open(filename,O_RDONLY);
 	file_buffer = mmap(0,size, PROT_READ, MAP_SHARED, file_description, 0);
 	MD5((unsigned char*) file_buffer, size, md5client);
 	munmap(file_buffer, size);
 
+	/* turn md5hash into a string */
 	int i,j;
 	char str[2*MD5_DIGEST_LENGTH+2];
 	memset(str,'\0',sizeof(str));
