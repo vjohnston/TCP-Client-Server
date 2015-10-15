@@ -13,7 +13,6 @@
 #define SERVER_PORT 41017
 #define MAX_PENDING 5
 #define MAX_LINE 256
-#define MAX_FILELENGTH 200000
 
 int file_exists(char * filename)
 {
@@ -35,16 +34,14 @@ int main(int argc, char* argv[])
 	struct sockaddr_in sin;
 	int len;
 	char buf[MAX_LINE];
-	char infile[MAX_FILELENGTH];
 	int s, new_s;
 	int opt = 1;
 	int file_size;
 	char file_size_s[100];
 	int server_port;
-	char* file_buffer;
+	char* file_buffer = (char*) malloc(44034000);
 	int file_description;
 	unsigned char result[MD5_DIGEST_LENGTH];
-	char hex[100];
 
 	if (argc==2)
 	{
@@ -96,7 +93,7 @@ int main(int argc, char* argv[])
 		file_size = file_exists(buf);
 		sprintf(file_size_s,"%i",file_size);
 		send(new_s,file_size_s,sizeof(file_size_s),0);
-
+		
 		if(file_size > 0)
 		{
 			// get MD5 hash
@@ -129,10 +126,11 @@ int main(int argc, char* argv[])
 			// open file and get buffer. Send buffer to client
 			// send a line of 100 characters at a time (100 bytes)
 			char text[file_size+1];
-			char line[2000000];
+			char line[20000];
 			FILE *fp = fopen(buf, "r");
 			memset(line,'\0',sizeof(line));
-			while (fgets(line,sizeof(line),fp)){
+			
+			while (fread(line,sizeof(char),sizeof(line),fp)){
 				send(new_s, line,sizeof(line),0);
 				memset(line,'\0',sizeof(line));
 			}

@@ -13,7 +13,6 @@
 #include <netdb.h>
 #include <unistd.h>
 #define MAX_MD5LENGTH 100
-#define MAX_FILELENGTH 2000000
 #define MAX_FILENAME 100
 int
 main(int argc, char * argv[])
@@ -24,9 +23,10 @@ main(int argc, char * argv[])
 	struct sockaddr_in sin;
 	struct timeval tv;
 	char *host;
-	char *buf = (char*) malloc(MAX_FILELENGTH);
 	char md5server[MAX_MD5LENGTH];
 	unsigned char md5client[MD5_DIGEST_LENGTH];
+	char* file_buffer = (char*) malloc(20000);
+	int file_description;
 	char *filename;
 	int s, len, server_port;
 	float start_time, end_time, nBytes, throughput;
@@ -63,13 +63,13 @@ main(int argc, char * argv[])
     		perror("simplex-talk: connect");
     		close(s); exit(1);
   	}
-
-  	/* send file length and file name to server */
+  	
+	/* send file length and file name to server */
 	len = strlen(filename)+1;
     	if(send(s, filename, len, 0)==-1){
     		perror("client send error!"); exit(1);
     	}
-
+	
 	/* receive file size and check if valid */
 	char file_size[30];
 	if ((recv(s,file_size,sizeof(file_size),0))==-1){
@@ -78,26 +78,27 @@ main(int argc, char * argv[])
 	if (atoi(file_size)<0){
 		perror("File does not exist"); exit(1);
 	}
-
+	
 	/* If the file size is valid keep receiving MD5 hash of file */
 	memset(md5server,'\0',sizeof(md5server));
 	while(strlen(md5server)==0){
 		recv(s,md5server,sizeof(md5server),0);
 	}
 	md5server[strlen(md5server)] = '\0';
-
+	
 	/* Calculate starting time */
 	gettimeofday(&tv,NULL);
 	start_time = tv.tv_usec;
 	
 	/* receive the file from the server. Get line by line and add to buffer */
+	FILE *ofp = fopen(filename,"w");
 	int n;
-	char line[2000000];
-	memset(buf,'\0',sizeof(buf));
+	char line[20000];
 	memset(line,'\0',sizeof(line));
-	while ((n=recv(s,line,sizeof(line),0))>0) {
-		strcat(buf,line);
+	while (nBytes < atoi(file_size)) {
+		n=recv(s,line,sizeof(line),0);
 		nBytes += n;
+		fwrite(line,sizeof(char),n,ofp);
 		memset(line,'\0',sizeof(line));
 	}
 
@@ -110,9 +111,13 @@ main(int argc, char * argv[])
 	/* close server connection */
   	close(s);
 
+	fclose(ofp);
 	/* covert buf to MD5 hash */
-	MD5((unsigned char*) buf, atoi(file_size), md5client);
-	munmap(buf, atoi(file_size));
+	int size = atoi(file_size);
+	file_description = open(filename,O_RDONLY);
+	file_buffer = mmap(0,size, PROT_READ, MAP_SHARED, file_description, 0);
+	MD5((unsigned char*) file_buffer, size, md5client);
+	munmap(file_buffer, size);
 
 	int i,j;
 	char str[2*MD5_DIGEST_LENGTH+2];
