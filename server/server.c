@@ -40,10 +40,9 @@ int main(int argc, char* argv[])
 	int s, new_s;
 	int opt = 1;
 	int file_size;
+	MD5_CTX mdContext;
 	char file_size_s[100];
 	int server_port;
-	char* file_buffer = (char*) malloc(44034000);
-	int file_description;
 	unsigned char result[MD5_DIGEST_LENGTH];
 
 	if (argc==2)
@@ -99,12 +98,16 @@ int main(int argc, char* argv[])
 		
 		if(file_size > 0)
 		{
-			// get MD5 hash
-			file_description = open(buf,O_RDONLY);
-			file_buffer = mmap(0,file_size, PROT_READ, MAP_SHARED, file_description, 0);
-			MD5((unsigned char*) file_buffer, file_size, result);
-			munmap(file_buffer, file_size);
-
+			// get md5 hash and store it in result
+			FILE *file = fopen(buf,"rb");
+			int bytes;
+			unsigned char mdbuf[200000];
+			MD5_Init(&mdContext);
+			while((bytes = fread(mdbuf,sizeof(char),200000,file))!= 0){
+				MD5_Update(&mdContext,mdbuf,bytes);
+			}
+			MD5_Final(result,&mdContext);
+			
 			// Put md5 hash in correct string format
 			int i,j;
 			char str[2*MD5_DIGEST_LENGTH+2];
@@ -128,7 +131,6 @@ int main(int argc, char* argv[])
 
 			// open file and get buffer. Send buffer to client
 			// send a line of 100 characters at a time (100 bytes)
-			char text[file_size+1];
 			char line[20000];
 			FILE *fp = fopen(buf, "r");
 			memset(line,'\0',sizeof(line));
